@@ -19,7 +19,7 @@ const upload = multer({ storage });
 const router = Router();
 
 // Get all posts
-router.get("/", async (req, res) => {
+router.get("/api/posts", async (req, res) => {
 	try {
 		const allPosts = await db.select().from(posts).orderBy(posts.createdAt);
 		res.json(allPosts);
@@ -28,8 +28,22 @@ router.get("/", async (req, res) => {
 	}
 });
 
+// Get single post
+router.get("/api/posts/:id", async (req, res) => {
+	const { id } = req.params;
+	try {
+		const post = await db
+			.select()
+			.from(posts)
+			.where(eq(posts.id, parseInt(id)));
+		res.json(post);
+	} catch (error) {
+		res.status(500).json({ error: "Failed to fetch post" });
+	}
+});
+
 // Create post
-router.post("/", authenticateToken, upload.single("media"), async (req: AuthRequest, res) => {
+router.post("/api/posts", authenticateToken, upload.single("media"), async (req: AuthRequest, res) => {
 	const { title, content } = req.body;
 	const mediaUrl = req.file?.filename;
 
@@ -51,7 +65,7 @@ router.post("/", authenticateToken, upload.single("media"), async (req: AuthRequ
 });
 
 // Update post
-router.put("/:id", authenticateToken, upload.single("media"), async (req: AuthRequest, res) => {
+router.put("/api/posts/:id", authenticateToken, upload.single("media"), async (req: AuthRequest, res) => {
 	const { id } = req.params;
 	const { title, content } = req.body;
 	const mediaUrl = req.file?.filename;
@@ -84,7 +98,7 @@ router.put("/:id", authenticateToken, upload.single("media"), async (req: AuthRe
 });
 
 // Delete post
-router.delete("/:id", authenticateToken, async (req: AuthRequest, res) => {
+router.delete("/api/posts/:id", authenticateToken, async (req: AuthRequest, res) => {
 	const { id } = req.params;
 
 	try {
