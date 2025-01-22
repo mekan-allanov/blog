@@ -1,0 +1,63 @@
+services:
+    db:
+        image: postgres:16
+        container_name: db
+        restart: always
+
+        environment:
+            POSTGRES_USER: ${POSTGRES_USER}
+            POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+            POSTGRES_DB: ${POSTGRES_DB}
+        ports:
+            - "5432:5432"
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+
+        networks:
+            - pern_network
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+
+    server:
+        build:
+            context: ./server
+            dockerfile: Dockerfile
+        image: server
+        container_name: server
+        ports:
+            - "5000:5000"
+        depends_on:
+            db:
+                condition: service_healthy
+        networks:
+            - pern_network
+        environment:
+            DATABASE_URL: ${DATABASE_URL}
+            JWT_SECRET: ${JWT_SECRET}
+        # command: sh -c "npm run migrate && npm run dev"
+
+    client:
+        build:
+            context: ./client
+            dockerfile: Dockerfile
+        image: client
+        container_name: client
+        ports:
+            - "3000:3000"
+        environment:
+            VITE_API_URL: ${VITE_API_URL}
+        networks:
+            - pern_network
+        depends_on:
+            - server
+
+networks:
+    pern_network:
+        driver: bridge
+
+volumes:
+    postgres_data:
+        driver: local
